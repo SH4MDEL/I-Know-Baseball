@@ -1,9 +1,10 @@
 from tkinter import *
 from tkinter import messagebox
 from tkinter import filedialog
-import tkinter
 from tkinter.ttk import *
-import os
+import re
+import requests
+from bs4 import BeautifulSoup
 
 def RunGraphicUserInterface():
     def Tk_Quit(event=None):
@@ -19,7 +20,7 @@ def RunGraphicUserInterface():
     AddressBarSelectYearPlayerName = LabelFrame(text='경기 연도 / 선수명')
     AddressBarSelectYearPlayerName.pack(fill=BOTH, side=TOP)
 
-    YearValues = [f'{i}년' for i in range(2008, 2022 + 1)]
+    YearValues = [f'{i}년' for i in range(2014, 2022 + 1)]
     YearValues.append('전체')
 
     ComboboxSelectYear = Combobox(AddressBarSelectYearPlayerName, height=10, value=YearValues)
@@ -57,8 +58,57 @@ def RunGraphicUserInterface():
     ComboboxSelectSituation.set("홈런")
     ComboboxSelectSituation.pack(side=LEFT)
 
+    url_name = '최정'
+    url_birth = None
+    # statiz_url = f'http://www.statiz.co.kr/player.php?opt=6&sopt=0&name={url_name}&birth={url_birth}&re=0&da=0&year=1000&plist=&pdate='
+
+
+
     def RunSearch():
-        pass
+        print(EntryPlayerName.get())
+        url_name = EntryPlayerName.get()
+        if ComboboxSelectSituation.get() == '안타':
+            url_situation = 2
+        elif ComboboxSelectSituation.get() == '2루타':
+            url_situation = 3
+        elif ComboboxSelectSituation.get() == '3루타':
+            url_situation = 4
+        elif ComboboxSelectSituation.get() == '끝내기':
+            url_situation = 0
+        elif ComboboxSelectSituation.get() == '타점':
+            url_situation = 6
+        elif ComboboxSelectSituation.get() == '삼진':
+            url_situation = 7
+        elif ComboboxSelectSituation.get() == '볼넷':
+            url_situation = 8
+        elif ComboboxSelectSituation.get() == '희타':
+            url_situation = 12
+        elif ComboboxSelectSituation.get() == '병살':
+            url_situation = 13
+        else:
+            url_situation = 5
+        if ComboboxSelectYear.get() == '전체':
+            url_year = '1000'
+        else:
+            url_year = re.search('\d{4}', ComboboxSelectYear.get()).group()
+
+        statiz_url = f'http://www.statiz.co.kr/player.php?opt=6&sopt=0&name={url_name}&re=0&da={url_situation}&year={url_year}&plist=&pdate='
+
+        if url_name:
+            print(statiz_url)
+            r = requests.get(statiz_url)
+            r.raise_for_status()
+
+            soup = BeautifulSoup(r.text, features='lxml')
+            oddrow_elms = soup.find_all(class_=re.compile(r'^oddrow_stz'))
+            evenrow_elms = soup.find_all(class_=re.compile(r'^evenrow_stz'))
+
+            for elm in oddrow_elms:
+                game_date = re.search('\d{4}-\d{2}-\d{2}', elm.a['href']).group()
+                print(game_date)
+            for elm in evenrow_elms:
+                game_date = re.search('\d{4}-\d{2}-\d{2}', elm.a['href']).group()
+                print(game_date)
 
     ButtonSearch = Button(AddressBarSelectSituation, command=RunSearch, text='검색')
     ButtonSearch.pack()
