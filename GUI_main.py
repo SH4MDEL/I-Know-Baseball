@@ -65,7 +65,7 @@ def RunGraphicUserInterface():
         def TranslationTeamName(team_name):
             if team_name == 'SSG' or team_name == 'SK':
                 return 'SK'
-            elif team_name == 'kt':
+            elif team_name == 'kt' or team_name == 'KT':
                 return 'KT'
             elif team_name == '두산':
                 return 'OB'
@@ -83,6 +83,9 @@ def RunGraphicUserInterface():
                 return 'HT'
             elif team_name == '한화':
                 return 'HH'
+            elif team_name == None:
+                print('???')
+                return None
     
         link_year = year.split('-')
         link_year = ''.join(link_year)
@@ -91,7 +94,6 @@ def RunGraphicUserInterface():
         return f'https://m.sports.naver.com/game/{link_year}{TranslationTeamName(away_team)}{TranslationTeamName(home_team)}0/video'
 
     def OpenHighright():
-        print(Highright_link[ListboxResult.curselection()[0]])
         webbrowser.open(Highright_link[ListboxResult.curselection()[0]])
 
     ButtonOpenHighright = Button(AddressBarResult, command=OpenHighright, text='선택일자 하이라이트 영상')
@@ -103,7 +105,7 @@ def RunGraphicUserInterface():
     # 상황
     SituationValues = [
     '안타', '2루타', '3루타', '홈런', '1점홈런', '2점홈런', '3점홈런', '만루홈런', 
-    '끝내기', '타점', '삼진', '볼넷', '사구', '희타', '병살'
+    '타점', '삼진', '볼넷', '사구', '희타', '병살'
     ]
 
     AddressBarSelectSituation = LabelFrame(text='상황')
@@ -113,12 +115,6 @@ def RunGraphicUserInterface():
     ComboboxSelectSituation.set("홈런")
     ComboboxSelectSituation.pack(side=LEFT)
 
-    url_name = '최정'
-    url_birth = None
-    # statiz_url = f'http://www.statiz.co.kr/player.php?opt=6&sopt=0&name={url_name}&birth={url_birth}&re=0&da=0&year=1000&plist=&pdate='
-
-
-
     def RunSearch():
         global Highright_count
 
@@ -126,7 +122,6 @@ def RunGraphicUserInterface():
         Highright_count = 0
         Highright_link.clear()
 
-        print(EntryPlayerName.get())
         url_name = EntryPlayerName.get()
         if ComboboxSelectSituation.get() == '안타':
             url_situation = 2
@@ -144,8 +139,6 @@ def RunGraphicUserInterface():
             url_situation = 5
         elif ComboboxSelectSituation.get() == '만루홈런':
             url_situation = 5
-        elif ComboboxSelectSituation.get() == '끝내기':
-            url_situation = 0
         elif ComboboxSelectSituation.get() == '타점':
             url_situation = 6
         elif ComboboxSelectSituation.get() == '삼진':
@@ -177,9 +170,17 @@ def RunGraphicUserInterface():
             player_team = soup.find(class_=re.compile(r'^callout')).text
             player_team = re.search('최근 소속 (SSG|SK|kt|두산|삼성|LG|키움|넥센|NC|롯데|KIA|한화)', player_team).group()
             player_team = player_team[6:]
+            
+            elms = []
+            elms_count = 0
+            full_count = len(oddrow_elms) + len(evenrow_elms)
+            while not elms_count == full_count:
+                elms_count += 1
+                if elms_count % 2 == 1:
+                    elms.append(oddrow_elms.pop(0))
+                if elms_count % 2 == 0:
+                    elms.append(evenrow_elms.pop(0))
 
-            print(player_team)
-            elms = oddrow_elms + evenrow_elms
 
             for elm in elms:
                 selected_team = None
