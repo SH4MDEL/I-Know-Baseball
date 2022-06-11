@@ -27,14 +27,14 @@ def RunGraphicUserInterface():
 
 
 
-    # 연도 선택 / 팀 선택 / 선수명 입력
-    AddressBarSelectYearPlayerName = LabelFrame(text='경기 연도 / 상대팀 선택 / 선수명')
-    AddressBarSelectYearPlayerName.pack(fill=BOTH, side=TOP)
+    # 연도 선택 / 팀 선택 / 상황
+    AddressBarSelectYearTeamSitu = LabelFrame(text='경기 연도 / 상대팀 선택 / 상황 선택')
+    AddressBarSelectYearTeamSitu.pack(fill=BOTH, side=TOP)
 
     YearValues = [f'{i}년' for i in range(2014, 2022 + 1)]
     YearValues.append('전체')
 
-    ComboboxSelectYear = Combobox(AddressBarSelectYearPlayerName, height=10, value=YearValues)
+    ComboboxSelectYear = Combobox(AddressBarSelectYearTeamSitu, height=10, value=YearValues)
     ComboboxSelectYear.set("전체")
     ComboboxSelectYear.pack(side=LEFT)
 
@@ -42,16 +42,20 @@ def RunGraphicUserInterface():
 
     TeamValues = ['SSG', 'kt', '두산', '삼성', 'LG', '키움', 'NC', '롯데', 'KIA', '한화', '전체']
 
-    ComboboxSelectRightTeam = Combobox(AddressBarSelectYearPlayerName, height=10, value=TeamValues)
+    ComboboxSelectRightTeam = Combobox(AddressBarSelectYearTeamSitu, height=10, value=TeamValues)
     ComboboxSelectRightTeam.set("전체")
     
     ComboboxSelectRightTeam.pack(side=LEFT)
 
 
-    EntryPlayerName = Entry(AddressBarSelectYearPlayerName, width=22)
-    EntryPlayerName.insert(0, '선수명 입력')
-    EntryPlayerName.pack()
+    SituationValues = [
+    '안타', '2루타', '3루타', '홈런', '1점홈런', '2점홈런', '3점홈런', '만루홈런', 
+    '타점', '삼진', '볼넷', '사구', '희타', '병살'
+    ]
 
+    ComboboxSelectSituation = Combobox(AddressBarSelectYearTeamSitu, height=10, value=SituationValues)
+    ComboboxSelectSituation.set("홈런")
+    ComboboxSelectSituation.pack(side=LEFT)
 
 
     # 출력
@@ -100,20 +104,25 @@ def RunGraphicUserInterface():
     ButtonOpenHighright.pack(side=BOTTOM)
 
 
-
-
     # 상황
-    SituationValues = [
-    '안타', '2루타', '3루타', '홈런', '1점홈런', '2점홈런', '3점홈런', '만루홈런', 
-    '타점', '삼진', '볼넷', '사구', '희타', '병살'
-    ]
 
-    AddressBarSelectSituation = LabelFrame(text='상황')
+    AddressBarSelectSituation = LabelFrame(text='선수명')
     AddressBarSelectSituation.pack(fill=BOTH)
 
-    ComboboxSelectSituation = Combobox(AddressBarSelectSituation, height=10, value=SituationValues)
-    ComboboxSelectSituation.set("홈런")
-    ComboboxSelectSituation.pack(side=LEFT)
+
+    RadioVar = IntVar()
+    
+    RadioBatter = Radiobutton(AddressBarSelectSituation, text="타자", variable=RadioVar, value=0)
+    RadioBatter.pack(side=LEFT)
+    RadioPitcher = Radiobutton(AddressBarSelectSituation, text="투수", variable=RadioVar, value=1)
+    RadioPitcher.pack(side=LEFT)
+
+
+    EntryPlayerName = Entry(AddressBarSelectSituation, width=22)
+    EntryPlayerName.insert(0, '선수명 입력')
+    EntryPlayerName.pack(side=LEFT)
+
+
 
     def RunSearch():
         global Highright_count
@@ -158,7 +167,7 @@ def RunGraphicUserInterface():
         else:
             url_year = re.search('\d{4}', ComboboxSelectYear.get()).group()
 
-        statiz_url = f'http://www.statiz.co.kr/player.php?opt=6&sopt=0&name={url_name}&re=0&da={url_situation}&year={url_year}&plist=&pdate='
+        statiz_url = f'http://www.statiz.co.kr/player.php?opt=6&sopt=0&name={url_name}&re={RadioVar.get()}&da={url_situation}&year={url_year}&plist=&pdate='
 
         if url_name:
             r = requests.get(statiz_url)
@@ -205,47 +214,47 @@ def RunGraphicUserInterface():
                     
                     if url_situation == 5:
                         if ComboboxSelectSituation.get() == '만루홈런' and (re.search('만루', td_elm[7].text)):
-                            ListboxResult.insert(Highright_count, f'{game_date}  vs {td_elm[1].text}전 {td_elm[3].text}상대 {td_elm[2].text}, {td_elm[7].text}상황 {td_elm[6].text}')
-                            if td_elm[2].text[-1] == '말':
+                            ListboxResult.insert(Highright_count, f'{game_date}  vs {td_elm[1].text}전 {td_elm[RadioVar.get() + 3].text}상대 {td_elm[2].text}, {td_elm[7].text}상황 {td_elm[6].text}')
+                            if (td_elm[2].text[-1] == '말' and RadioVar.get() == 0) or (td_elm[2].text[-1] == '초' and RadioVar.get() == 1):
                                 Highright_link.insert(Highright_count, CreateHighrightLink(re.search('\d{4}-\d{2}-\d{2}', elm.a['href']).group(), player_team, elm_team))
-                            elif td_elm[2].text[-1] == '초':
+                            elif (td_elm[2].text[-1] == '초' and RadioVar.get() == 0) or (td_elm[2].text[-1] == '말' and RadioVar.get() == 1):
                                 Highright_link.insert(Highright_count, CreateHighrightLink(re.search('\d{4}-\d{2}-\d{2}', elm.a['href']).group(), elm_team, player_team))
 
                         elif ComboboxSelectSituation.get() == '3점홈런' and (re.search('1,2루', td_elm[7].text) or re.search('1,3루', td_elm[7].text) or re.search('2,3루', td_elm[7].text)):
-                            ListboxResult.insert(Highright_count, f'{game_date}  vs {td_elm[1].text}전 {td_elm[3].text}상대 {td_elm[2].text}, {td_elm[7].text}상황 {td_elm[6].text}')
-                            if td_elm[2].text[-1] == '말':
+                            ListboxResult.insert(Highright_count, f'{game_date}  vs {td_elm[1].text}전 {td_elm[RadioVar.get() + 3].text}상대 {td_elm[2].text}, {td_elm[7].text}상황 {td_elm[6].text}')
+                            if (td_elm[2].text[-1] == '말' and RadioVar.get() == 0) or (td_elm[2].text[-1] == '초' and RadioVar.get() == 1):
                                 Highright_link.insert(Highright_count, CreateHighrightLink(re.search('\d{4}-\d{2}-\d{2}', elm.a['href']).group(), player_team, elm_team))
-                            elif td_elm[2].text[-1] == '초':
+                            elif (td_elm[2].text[-1] == '초' and RadioVar.get() == 0) or (td_elm[2].text[-1] == '말' and RadioVar.get() == 1):
                                 Highright_link.insert(Highright_count, CreateHighrightLink(re.search('\d{4}-\d{2}-\d{2}', elm.a['href']).group(), elm_team, player_team))
                             
                         elif ComboboxSelectSituation.get() == '2점홈런' and not re.search('1,2루', td_elm[7].text) \
                             and not re.search('1,3루', td_elm[7].text) and not re.search('2,3루', td_elm[7].text) \
                             and (re.search('1루', td_elm[7].text) or re.search('2루', td_elm[7].text) or re.search('3루', td_elm[7].text)):
-                            ListboxResult.insert(Highright_count, f'{game_date}  vs {td_elm[1].text}전 {td_elm[3].text}상대 {td_elm[2].text}, {td_elm[7].text}상황 {td_elm[6].text}')
-                            if td_elm[2].text[-1] == '말':
+                            ListboxResult.insert(Highright_count, f'{game_date}  vs {td_elm[1].text}전 {td_elm[RadioVar.get() + 3].text}상대 {td_elm[2].text}, {td_elm[7].text}상황 {td_elm[6].text}')
+                            if (td_elm[2].text[-1] == '말' and RadioVar.get() == 0) or (td_elm[2].text[-1] == '초' and RadioVar.get() == 1):
                                 Highright_link.insert(Highright_count, CreateHighrightLink(re.search('\d{4}-\d{2}-\d{2}', elm.a['href']).group(), player_team, elm_team))
-                            elif td_elm[2].text[-1] == '초':
+                            elif (td_elm[2].text[-1] == '초' and RadioVar.get() == 0) or (td_elm[2].text[-1] == '말' and RadioVar.get() == 1):
                                 Highright_link.insert(Highright_count, CreateHighrightLink(re.search('\d{4}-\d{2}-\d{2}', elm.a['href']).group(), elm_team, player_team))
 
                         elif ComboboxSelectSituation.get() == '1점홈런' and not re.search('1루', td_elm[7].text) and not re.search('2루', td_elm[7].text) and not re.search('3루', td_elm[7].text):
-                            ListboxResult.insert(Highright_count, f'{game_date}  vs {td_elm[1].text}전 {td_elm[3].text}상대 {td_elm[2].text}, {td_elm[7].text}상황 {td_elm[6].text}')
-                            if td_elm[2].text[-1] == '말':
+                            ListboxResult.insert(Highright_count, f'{game_date}  vs {td_elm[1].text}전 {td_elm[RadioVar.get() + 3].text}상대 {td_elm[2].text}, {td_elm[7].text}상황 {td_elm[6].text}')
+                            if (td_elm[2].text[-1] == '말' and RadioVar.get() == 0) or (td_elm[2].text[-1] == '초' and RadioVar.get() == 1):
                                 Highright_link.insert(Highright_count, CreateHighrightLink(re.search('\d{4}-\d{2}-\d{2}', elm.a['href']).group(), player_team, elm_team))
-                            elif td_elm[2].text[-1] == '초':
+                            elif (td_elm[2].text[-1] == '초' and RadioVar.get() == 0) or (td_elm[2].text[-1] == '말' and RadioVar.get() == 1):
                                 Highright_link.insert(Highright_count, CreateHighrightLink(re.search('\d{4}-\d{2}-\d{2}', elm.a['href']).group(), elm_team, player_team))
 
                         elif ComboboxSelectSituation.get() == '홈런':
-                            ListboxResult.insert(Highright_count, f'{game_date}  vs {td_elm[1].text}전 {td_elm[3].text}상대 {td_elm[2].text}, {td_elm[7].text}상황 {td_elm[6].text}')
-                            if td_elm[2].text[-1] == '말':
+                            ListboxResult.insert(Highright_count, f'{game_date}  vs {td_elm[1].text}전 {td_elm[RadioVar.get() + 3].text}상대 {td_elm[2].text}, {td_elm[7].text}상황 {td_elm[6].text}')
+                            if (td_elm[2].text[-1] == '말' and RadioVar.get() == 0) or (td_elm[2].text[-1] == '초' and RadioVar.get() == 1):
                                 Highright_link.insert(Highright_count, CreateHighrightLink(re.search('\d{4}-\d{2}-\d{2}', elm.a['href']).group(), player_team, elm_team))
-                            elif td_elm[2].text[-1] == '초':
+                            elif (td_elm[2].text[-1] == '초' and RadioVar.get() == 0) or (td_elm[2].text[-1] == '말' and RadioVar.get() == 1):
                                 Highright_link.insert(Highright_count, CreateHighrightLink(re.search('\d{4}-\d{2}-\d{2}', elm.a['href']).group(), elm_team, player_team))
                         continue
                     else:
-                        ListboxResult.insert(Highright_count, f'{game_date}  vs {td_elm[1].text}전 {td_elm[3].text}상대 {td_elm[2].text}, {td_elm[7].text}상황 {td_elm[6].text}')
-                        if td_elm[2].text[-1] == '말':
+                        ListboxResult.insert(Highright_count, f'{game_date}  vs {td_elm[1].text}전 {td_elm[RadioVar.get() + 3].text}상대 {td_elm[2].text}, {td_elm[7].text}상황 {td_elm[6].text}')
+                        if (td_elm[2].text[-1] == '말' and RadioVar.get() == 0) or (td_elm[2].text[-1] == '초' and RadioVar.get() == 1):
                             Highright_link.insert(Highright_count, CreateHighrightLink(re.search('\d{4}-\d{2}-\d{2}', elm.a['href']).group(), player_team, elm_team))
-                        elif td_elm[2].text[-1] == '초':
+                        elif (td_elm[2].text[-1] == '초' and RadioVar.get() == 0) or (td_elm[2].text[-1] == '말' and RadioVar.get() == 1):
                             Highright_link.insert(Highright_count, CreateHighrightLink(re.search('\d{4}-\d{2}-\d{2}', elm.a['href']).group(), elm_team, player_team))
 
 
